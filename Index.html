@@ -1,0 +1,188 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NIGER</title>  <style>
+    body {
+      margin: 0;
+      background: #071522;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+
+    header {
+      background: #0b1f30;
+      padding: 25px;
+    }
+
+    .logo {
+      color: #00c878;
+      font-size: 35px;
+      font-weight: bold;
+    }
+
+    p {
+      color: #b7c9d8;
+    }
+
+    button {
+      background: #00c878;
+      color: #071522;
+      border: none;
+      padding: 14px 25px;
+      margin: 8px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .card {
+      background: #10283b;
+      margin: 18px;
+      padding: 20px;
+      border-radius: 15px;
+    }
+  </style></head><body>  <header>
+    <div class="logo">🇳🇬 NIGER</div>
+    <p>CHAT • DRIVE • EXPLORE</p>
+  </header>  <div class="card">
+    <h2>Welcome to NIGER!</h2>
+    <p>Meet people and explore our virtual Nigeria.</p>
+    <button onclick="alert('Welcome to NIGER!')">
+      Get Started
+    </button>
+  </div>  <div class="card">
+    <h2>💬 Chat</h2>
+    <p>Connect with friends.</p>
+    <button onclick="openChat()">
+      Open Chat
+    </button>
+  </div>  <div class="card">
+    <h2>🚘 Virtual World</h2>
+    <button onclick="alert('Car driving is coming soon!')">🚗 Car</button>
+    <button onclick="alert('Bike riding is coming soon!')">🏍️ Bike</button>
+    <button onclick="alert('Flying is coming soon!')">✈️ Plane</button>
+  </div>  <div class="card">
+    <h2>🗺️ Nigeria Map</h2>
+    <p>Explore Nigeria with NIGER.</p>
+    <button onclick="alert('Nigeria map is coming soon!')">
+      Explore Map
+    </button> <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCv_vkitOzpiyWiK7oKQMdxoH0t03ZVIzw",
+  authDomain: "niger-500a6.firebaseapp.com",
+  projectId: "niger-500a6",
+  storageBucket: "niger-500a6.firebasestorage.app",
+  messagingSenderId: "219283671469",
+  appId: "1:219283671469:web:b0afb757c0c93c69a7f924",
+  measurementId: "G-8FXRNY59RY"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+console.log("NIGER Firebase initialized!");
+
+      window.openChat = async function () {
+  let box = document.getElementById("niger-chat-box");
+
+  if (box) {
+    box.style.display = box.style.display === "none" ? "block" : "none";
+    return;
+  }
+
+  box = document.createElement("div");
+  box.id = "niger-chat-box";
+  box.style.cssText = "position:fixed;bottom:12px;right:12px;width:90%;max-width:400px;background:#10283b;color:white;padding:14px;border-radius:12px;z-index:9999;";
+
+  box.innerHTML = `
+    <h3>NIGER Real Chat
+      <button id="niger-close" style="float:right">X</button>
+    </h3>
+    <div id="niger-messages" style="height:220px;overflow:auto;background:#071724;padding:8px">Loading messages...</div>
+    <input id="niger-input" maxlength="1000" placeholder="Type a message..." style="width:68%;padding:10px">
+    <button id="niger-send">Send</button>
+    <p id="niger-status"></p>
+  `;
+
+  document.body.appendChild(box);
+
+  const messages = box.querySelector("#niger-messages");
+  const input = box.querySelector("#niger-input");
+  const status = box.querySelector("#niger-status");
+  const send = box.querySelector("#niger-send");
+
+  box.querySelector("#niger-close").onclick = () => {
+    box.style.display = "none";
+  };
+
+  try {
+    const fs = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js");
+    const { signInAnonymously } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js");
+
+    if (!auth.currentUser) await signInAnonymously(auth);
+
+    const q = fs.query(
+      fs.collection(db, "messages"),
+      fs.orderBy("createdAt", "asc"),
+      fs.limit(100)
+    );
+
+    fs.onSnapshot(q, snapshot => {
+      messages.replaceChildren();
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const p = document.createElement("p");
+        p.textContent = (data.sender || "Guest") + ": " + (data.text || "");
+        messages.appendChild(p);
+      });
+
+      messages.scrollTop = messages.scrollHeight;
+    }, error => {
+      status.textContent = "Read error: " + error.message;
+    });
+
+    send.onclick = async () => {
+      const text = input.value.trim();
+      if (!text) return;
+
+      send.disabled = true;
+
+      try {
+        await fs.addDoc(fs.collection(db, "messages"), {
+          sender: "Guest",
+          text,
+          createdAt: fs.serverTimestamp()
+        });
+
+        input.value = "";
+        status.textContent = "Message sent!";
+      } catch (error) {
+        status.textContent = "Send error: " + error.message;
+      } finally {
+        send.disabled = false;
+      }
+    };
+
+    input.onkeydown = event => {
+      if (event.key === "Enter") send.click();
+    };
+
+    status.textContent = "Chat connected.";
+  } catch (error) {
+    status.textContent = "Chat setup error: " + error.message;
+  }
+};
+    </script
+
+  </div>  <p>© 2026 NIGER</p></body>
+</html>
+</html>
